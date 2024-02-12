@@ -4,13 +4,98 @@ const router = express.Router();
 const jwt = require('jsonwebtoken');
 const User = require('../models/userModel');
 const { hashPassword } = require('../utils/bcryptUtils');
+const bcrypt = require('bcrypt');
+const { auth, adminAuth } = require('../middleware/authMiddleware');
+
+// Endpoint to for admin verification
+router.get('/isadmin', adminAuth, async (req, res) => {
+    let user = await User.findOne({ _id: req.user.id })
+    if (user.email !== 'admin@gmail.com') {
+        return res.status(400).json({
+            success: false,
+            message: "Not authorized as an admin"
+        })
+    }
+    res.json({
+        success: true,
+        message: "Admin verified successfully"
+    })
+})
+
+// End point for Admin Panel Login
+router.post('/adminpanellogin', async (req, res) => {
+    try {
+        let user = await User.findOne({ email: 'admin@gmail.com' });
+
+        if (!user) {
+            // Admin user does not exist, create it
+            const adminPassword = 'admin123';
+            const hashedPassword = await hashPassword(adminPassword);
+            const newUser = new User({
+                name: 'admin',
+                email: 'admin@gmail.com',
+                profile_image: 'https://www.gravatar.com/avatar/',
+                password: hashedPassword,
+            });
+
+            user = await newUser.save();
+
+            if (!user) {
+                return res.status(500).json({
+                    success: false,
+                    message: 'Error creating admin user',
+                });
+            }
+        }
+
+        const emailMatch = req.body.email === user.email;
+
+        if (!emailMatch) {
+            console.log('email does not match');
+            return res.status(400).json({
+                success: false,
+                message: 'Incorrect email',
+            });
+        }
+
+        const passwordMatch = await bcrypt.compare(req.body.password, user.password);
+
+        if (!passwordMatch) {
+            console.log('password does not match');
+            return res.status(400).json({
+                success: false,
+                message: 'Incorrect password',
+            });
+        }
+
+        const data = {
+            user: {
+                id: user.id,
+            },
+        };
+
+        const token = jwt.sign(data, req.body.password, { expiresIn: '1h' });
+        res.json({
+            success: true,
+            token,
+            message: 'Admin logged in successfully',
+        });
+    } catch (error) {
+        console.error('Error during admin panel login:', error.message);
+        res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+});
+
 
 // Registration route
 router.post('/register', async (req, res) => {
     console.log(req.body);
     try {
         let check = await User.findOne({ email: req.body.email });
-        
+
         if (check) {
             return res.status(400).json({
                 success: false,
