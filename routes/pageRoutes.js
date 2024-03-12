@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Page = require('../models/pageModel');
+const Category = require('../models/categoryModel');
 
 // Page registration route
 router.post('/add', async (req, res) => {
@@ -17,6 +18,42 @@ router.post('/add', async (req, res) => {
         res.status(201).json({
             success: true,
             message: "Page registered successfully",
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+});
+
+router.post('/category', async (req, res) => {
+    try {
+        const categ = new Category({
+            category: req.query.category,
+            page: req.query.page,
+        });
+
+        await categ.save();
+
+        res.status(201).json({
+            success: true,
+            message: "Category registered successfully",
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+});
+
+router.get('/getcategory', async (req, res) => {
+    try {
+        const categories = await Category.find();
+        res.status(200).json({
+            success: true,
+            categories,
         });
     } catch (error) {
         res.status(500).json({

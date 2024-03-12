@@ -4,6 +4,7 @@ const router = express.Router();
 const jwt = require('jsonwebtoken');
 const User = require('../models/userModel');
 const { hashPassword } = require('../utils/bcryptUtils');
+const { transporter } = require('../Utils/nodemailer');
 const bcrypt = require('bcrypt');
 const { auth, adminAuth } = require('../middleware/authMiddleware');
 
@@ -25,11 +26,9 @@ router.get('/isadmin', adminAuth, async (req, res) => {
 // End point for Admin Panel Login
 router.post('/adminpanellogin', async (req, res) => {
     try {
-        let user = await User.findOne({ email: 'admin@gmail.com' });
-
+        let user = await User.findOne({ email: process.env.ADMIN_EMAIL });
         if (!user) {
-            // Admin user does not exist, create it
-            const adminPassword = 'admin123';
+            const adminPassword = process.env.ADMIN_PASSWORD;
             const hashedPassword = await hashPassword(adminPassword);
             const newUser = new User({
                 name: 'admin',
@@ -122,11 +121,29 @@ router.post('/register', async (req, res) => {
 
         const token = jwt.sign(data, process.env.JWT_SECRET);
 
-        res.status(201).json({
-            success: true,
-            token,
-            message: "User registered successfully",
-        });
+        const mailOptions = {
+            from: 'MyTube <shahbazrafique429@gmail.com>',
+            to: req.body.email,
+            subject:"You have been added as a user to MyTube",
+            html: `We are excited to welcome you to MyTube, the ultimate platform for sharing and discovering amazing videos! This email is to inform you that your account has been created successfully by our administrator.
+            <br/>
+            Your MyTube Account Details:
+            <br/>
+            Email: ${req.body.email}<br/>
+            Password: ${req.body.password} `,
+          };
+        
+          transporter.sendMail(mailOptions, (error, info) => {
+            if (error) {
+              console.log(error);
+            } else {
+                res.status(201).json({
+                    success: true,
+                    token,
+                    message: "User registered successfully",
+                });
+            }
+          });
     } catch (error) {
         console.log(error);
         res.status(500).json({

@@ -10,6 +10,7 @@ router.post('/add', async (req, res) => {
             title: req.body.title,
             description: req.body.description,
             video_link: req.body.video_link,
+            category: req.query.category,
             pages: req.body.pages,  // Assuming page ID is sent in the request body
             assignUsers: req.body.assignUsers,  // Assuming user IDs are sent in the request body
         });

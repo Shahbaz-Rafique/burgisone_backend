@@ -11,6 +11,10 @@ const videoSchema = new mongoose.Schema({
     video_link: {
         type: String,  // Assuming it's a URL or file path
     },
+    category: {
+        type: String, 
+        required:true,
+    },
     pages: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Page',
